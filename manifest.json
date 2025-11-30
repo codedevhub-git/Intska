@@ -1,0 +1,11 @@
+{
+  "name": "Brain Challenge Engine",
+  "short_name": "Brain Challenge",
+  "description": "Test your mental skills with 20+ different puzzle types",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": []
+}
