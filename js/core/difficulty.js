@@ -155,22 +155,32 @@ function getOperations(level) {
   return ['+', '-', '*', '/'];
 }
 
-/**
- * Calculate base timer for challenge
- * Can be modified by specific challenge needs
- */
-export function getBaseTimer(challengeType, difficulty) {
-  const params = getDifficultyParams(challengeType, difficulty);
-  return params.timeLimit;
-}
+// In core/difficulty.js
 
 /**
  * Get timer reduction per difficulty level
  */
 export function getTimerReduction(difficulty) {
-  // Reduces by 0.5 seconds every 3 levels
+  // Reduces by 0.5 seconds every 3 levels (this logic remains the same)
   return Math.floor(difficulty / 3) * 0.5;
 }
+
+/**
+ * Calculate challenge timer based on its static base time and difficulty reduction.
+ * @param {number} challengeBaseTime - The fixed, non-scaling base time for this specific challenge (e.g., 60 seconds).
+ * @param {number} difficulty - The current difficulty level.
+ * @returns {number} The actual time limit for the challenge in seconds.
+ */
+export function getBaseTimer(challengeBaseTime, difficulty) {
+  const reduction = getTimerReduction(difficulty);
+  const calculatedTime = challengeBaseTime - reduction;
+
+  // Set a hard minimum time limit (e.g., 5 seconds) to prevent impossible challenges
+  return Math.max(calculatedTime, 5); 
+}
+
+// NOTE: The previous logic in getBaseTimer which relied on getDifficultyParams
+// and params.timeLimit is now obsolete.
 
 /**
  * Check if new challenge types should unlock

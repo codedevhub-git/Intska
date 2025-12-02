@@ -169,7 +169,7 @@
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-md);
-  min-height: 300px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
 }
@@ -269,6 +269,7 @@
   width: 100%;
   box-shadow: var(--shadow-lg);
   animation: slideInUp var(--transition-normal);
+  margin: auto auto;
 }
 
 .modal-title {

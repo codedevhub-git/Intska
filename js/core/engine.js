@@ -46,7 +46,7 @@ export class GameEngine {
       
       // Timer
       timeRemaining: 0,
-      baseTime: 15,
+      baseTime: 20,
       timerInterval: null,
       
       // Game started timestamp
@@ -66,10 +66,113 @@ export class GameEngine {
     this.nextChallenge();
   }
 
+
+
+/**
+ * DEBUGGING: Load next challenge with optional forced challenge ID and difficulty
+*/
+
+// async nextChallenge() {
+//     if (!this.state.isPlaying) return;
+
+//     // SAFEGUARD: Don't load new challenge if no lives left
+//     if (this.state.lives <= 0) {
+//       this.endGame();
+//       return;
+//     }
+
+//     // Clean up previous challenge
+//     if (this.currentChallenge && this.currentChallenge.cleanup) {
+//       this.currentChallenge.cleanup();
+//     }
+
+//     // Stop existing timer
+//     this.stopTimer();
+
+//     try {
+
+
+//       // ============================================================
+//       // 🛠️ DEBUG CONFIGURATION  Water Levels
+//       // Change 'active' to true to force a specific game/level
+//       // ============================================================
+//       const debugConfig = {
+//         active: true,           // <--- Set to TRUE to enable
+//         id: 'number-grid',       // ID of the game you want to test
+//         forceDifficulty: 1     // Set a number to force level, or null to keep natural progression
+//       };
+//       // ============================================================
+
+//       let challengeFactory;
+//       console.log('challage registry:', registry.challenges);
+//       // Logic to choose between Debug or Random
+//       if (debugConfig.active && debugConfig.id) {
+//         if (registry.hasChallenge(debugConfig.id)) {
+//           console.log(`🐞 DEBUG MODE: Forcing challenge "${debugConfig.id}"`);
+          
+//           // Get the specific challenge directly from the registry map
+//           challengeFactory = registry.challenges.get(debugConfig.id); //
+
+//           // Override difficulty if set
+//           if (debugConfig.forceDifficulty !== null) {
+//             this.state.difficulty = debugConfig.forceDifficulty;
+//             console.log(`🐞 DEBUG MODE: Forcing difficulty to Level ${this.state.difficulty}`);
+//           }
+//         } else {
+//           console.error(`❌ Debug Error: Challenge ID "${debugConfig.id}" not found. Falling back to random.`);
+//           challengeFactory = registry.getRandomChallenge(this.state.difficulty); 
+//         }
+//       } else {
+//         // Standard Behavior: Get random challenge
+//         challengeFactory = registry.getRandomChallenge(this.state.difficulty); 
+//       }
+      
+//       // ------------------------------------------------------------
+//       // The rest of the function remains the same...
+//       // ------------------------------------------------------------
+
+//       // 2. Extract the specific challenge base time from the metadata
+//       const challengeBaseTime = challengeFactory.metadata.baseTime;
+
+//       // 3. INSTANTIATE the actual challenge object using the factory function
+//       this.currentChallenge = challengeFactory.factory(this.state.difficulty); 
+
+//       // 4. Update state
+//       this.state.currentChallengeType = this.currentChallenge.category;
+//       this.state.totalChallenges++;
+
+//       // 5. Get the scaled timer for this challenge using its specific base time
+//       this.state.baseTime = getBaseTimer(
+//         challengeBaseTime, 
+//         this.state.difficulty
+//       );
+//       this.state.timeRemaining = this.state.baseTime;
+
+//       // Emit challenge ready event
+//       this.emit('challengeReady', {
+//         challenge: this.currentChallenge,
+//         difficulty: this.state.difficulty,
+//         timeLimit: this.state.baseTime
+//       });
+
+//       // ADD DELAY - Give 2.5 seconds to read instructions before timer starts
+//       await new Promise(resolve => setTimeout(resolve, 2500));
+
+//       // Start timer AFTER delay
+//       this.startTimer();
+
+//     } catch (error) {
+//       console.error('Error loading challenge:', error);
+//       this.endGame();
+//     }
+// }
+
+
+
 /**
  * Load next random challenge
  */
-nextChallenge() {
+async nextChallenge() {
   if (!this.state.isPlaying) return;
   
   // SAFEGUARD: Don't load new challenge if no lives left
@@ -86,27 +189,39 @@ nextChallenge() {
   // Stop existing timer
   this.stopTimer();
 
-  // Get random challenge from registry
   try {
-    this.currentChallenge = registry.getRandomChallenge(this.state.difficulty);
+    // 1. Get random challenge FACTORY from registry (includes metadata)
+    const challengeFactory = registry.getRandomChallenge(this.state.difficulty); 
+    
+    // 2. Extract the specific challenge base time from the metadata
+    const challengeBaseTime = challengeFactory.metadata.baseTime;
+
+    // 3. INSTANTIATE the actual challenge object using the factory function
+    // The previous code was missing this crucial step!
+    this.currentChallenge = challengeFactory.factory(this.state.difficulty); 
+
+    // 4. Update state
     this.state.currentChallengeType = this.currentChallenge.category;
     this.state.totalChallenges++;
 
-    // Get timer for this challenge
+    // 5. Get the scaled timer for this challenge using its specific base time
     this.state.baseTime = getBaseTimer(
-      this.currentChallenge.category,
+      challengeBaseTime, // <-- NOW PASSING THE CHALLENGE'S SPECIFIC BASE TIME (e.g., 60s)
       this.state.difficulty
     );
     this.state.timeRemaining = this.state.baseTime;
 
     // Emit challenge ready event
     this.emit('challengeReady', {
-      challenge: this.currentChallenge,
+      challenge: this.currentChallenge, // Now correctly emitting the INSTANCE
       difficulty: this.state.difficulty,
       timeLimit: this.state.baseTime
     });
 
-    // Start timer
+    // ADD DELAY - Give 2.5 seconds to read instructions before timer starts
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // Start timer AFTER delay
     this.startTimer();
 
   } catch (error) {
@@ -241,7 +356,7 @@ handleWrongAnswer() {
 }
 
 /**
- * Handle timeout
+ * Handle timeout 
  */
 handleTimeout() {
   // Don't handle timeout if already dead or game ended

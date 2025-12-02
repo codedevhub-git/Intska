@@ -6,8 +6,9 @@
  * 16. Water Levels Puzzle
  * 17. Shape Rotation Fit
  * 18. Word Unscramble
- * 19. Cube Counting
+ * 19. Cube Counting 
  * 20. Same Game (Color Cluster)
+ * registerChallenge
  */
 
 import { getDifficultyParams } from '../core/difficulty.js';
@@ -15,42 +16,136 @@ import { randomInt, randomChoice, shuffleArray, generateColors } from '../utils/
 import { validateArray, validateNumber, validateString } from '../utils/validators.js';
 
 /**
- * 13. Drag-and-Drop Sorting Challenge
+ * 13. Number Selection Challenge (formerly Drag-and-Drop)
+ * FIXED: Renamed to match actual gameplay (Click/Select)
  */
-export function createDragDropSortingChallenge(difficulty) {
+export function createNumberSelectionChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   
+  // 1. Define the Rules
   const categories = [
-    { name: 'Even', test: (n) => n % 2 === 0, items: () => Array.from({ length: params.itemCount }, () => randomInt(1, 50)) },
-    { name: 'Odd', test: (n) => n % 2 !== 0, items: () => Array.from({ length: params.itemCount }, () => randomInt(1, 50)) },
-    { name: 'Big (>25)', test: (n) => n > 25, items: () => Array.from({ length: params.itemCount }, () => randomInt(1, 50)) },
-    { name: 'Small (≤25)', test: (n) => n <= 25, items: () => Array.from({ length: params.itemCount }, () => randomInt(1, 50)) }
+    { 
+      name: 'Even Numbers', 
+      test: (n) => n % 2 === 0, 
+      // Generate a mix of even and odd to ensure the game is playable
+      generate: () => {
+        const evens = Array.from({ length: 4 }, () => randomInt(1, 25) * 2);
+        const odds = Array.from({ length: 4 }, () => randomInt(1, 25) * 2 - 1);
+        return shuffleArray([...evens, ...odds]);
+      }
+    },
+    { 
+      name: 'Odd Numbers', 
+      test: (n) => n % 2 !== 0,
+      generate: () => {
+        const evens = Array.from({ length: 4 }, () => randomInt(1, 25) * 2);
+        const odds = Array.from({ length: 4 }, () => randomInt(1, 25) * 2 - 1);
+        return shuffleArray([...evens, ...odds]);
+      }
+    },
+    { 
+      name: 'Big Numbers (>50)', 
+      test: (n) => n > 50,
+      generate: () => {
+        const big = Array.from({ length: 4 }, () => randomInt(51, 99));
+        const small = Array.from({ length: 4 }, () => randomInt(1, 49));
+        return shuffleArray([...big, ...small]);
+      }
+    },
+    { 
+      name: 'Small Numbers (≤50)', 
+      test: (n) => n <= 50,
+      generate: () => {
+        const big = Array.from({ length: 4 }, () => randomInt(51, 99));
+        const small = Array.from({ length: 4 }, () => randomInt(1, 49));
+        return shuffleArray([...big, ...small]);
+      }
+    }
   ];
   
-  const sortType = randomChoice(categories);
-  const items = sortType.items();
-  const shuffledItems = shuffleArray(items);
+  // 2. Setup the Round
+  const category = randomChoice(categories);
   
-  const correctAnswer = items.map((item, index) => 
-    sortType.test(item) ? index : -1
-  ).filter(i => i !== -1).sort((a, b) => a - b);
+  // We generate specific numbers based on the rule so we KNOW there are correct answers
+  // (The old code just picked random numbers, so sometimes there were 0 correct answers)
+  const items = category.generate();
   
-  let selectedItems = [];
-  
+  // 3. Calculate Correct Indices
+  // We store the INDEX of the correct items
+  const correctIndices = items
+    .map((val, idx) => category.test(val) ? idx : -1)
+    .filter(idx => idx !== -1)
+    .sort((a, b) => a - b); // Sort needed for comparison later
+
+  // Styles for this game
+  const selectionStyles = `
+    <style>
+      .selection-game { text-align: center; }
+      .number-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        padding: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+      .number-item {
+        background: #ecf0f1;
+        border: 2px solid #bdc3c7;
+        border-radius: 8px;
+        padding: 20px 10px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2c3e50;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .number-item:hover {
+        transform: translateY(-2px);
+        border-color: #3498db;
+      }
+      /* The Selected State */
+      .number-item.selected {
+        background-color: #3498db;
+        color: white;
+        border-color: #2980b9;
+        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+        transform: scale(1.05);
+      }
+      .instruction-text {
+        font-size: 1.2rem;
+        color: #555;
+        margin-bottom: 10px;
+      }
+      .rule-badge {
+        background: #2c3e50;
+        color: #fff;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+    </style>
+  `;
+
+  // Track what user has clicked
+  let userSelection = [];
+
   return {
-    id: 'drag-drop-sorting',
+    id: 'number-selection', // Renamed from drag-drop
     category: 'puzzle',
     difficulty: difficulty,
-    title: `Select All: ${sortType.name}`,
-    correctAnswer: correctAnswer,
+    title: `Find: ${category.name}`,
+    correctAnswer: correctIndices,
     
     render(contentContainer, answerContainer) {
       contentContainer.innerHTML = `
-        <div class="sorting-challenge">
-          <p class="sort-instruction">Click all ${sortType.name} numbers</p>
-          <div class="sortable-items">
-            ${shuffledItems.map((item, index) => `
-              <div class="sortable-item" data-index="${index}" data-value="${item}">
+        ${selectionStyles}
+        <div class="selection-game">
+          <p class="instruction-text">Tap all numbers that match:</p>
+          <div class="rule-badge">${category.name}</div>
+          <div class="number-grid">
+            ${items.map((item, index) => `
+              <div class="number-item" data-index="${index}">
                 ${item}
               </div>
             `).join('')}
@@ -59,52 +154,63 @@ export function createDragDropSortingChallenge(difficulty) {
       `;
       
       answerContainer.innerHTML = `
-        <button id="submit-btn" class="btn btn-primary">Submit</button>
-        <button id="clear-btn" class="btn btn-secondary">Clear</button>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button id="clear-btn" class="btn btn-secondary">Clear</button>
+          <button id="submit-btn" class="btn btn-primary">Submit</button>
+        </div>
       `;
       
       this.setupEventListeners(contentContainer, answerContainer);
     },
     
     setupEventListeners(contentContainer, answerContainer) {
-      const items = contentContainer.querySelectorAll('.sortable-item');
+      const gridItems = contentContainer.querySelectorAll('.number-item');
       const submitBtn = answerContainer.querySelector('#submit-btn');
       const clearBtn = answerContainer.querySelector('#clear-btn');
       
-      selectedItems = [];
+      userSelection = [];
       
-      items.forEach((item) => {
+      // Handle Item Clicks
+      gridItems.forEach(item => {
         item.addEventListener('click', () => {
-          const index = parseInt(item.dataset.index);
+          const idx = parseInt(item.dataset.index);
           
-          if (item.classList.contains('item-selected')) {
-            item.classList.remove('item-selected');
-            selectedItems = selectedItems.filter(i => i !== index);
+          if (userSelection.includes(idx)) {
+            // Deselect
+            userSelection = userSelection.filter(i => i !== idx);
+            item.classList.remove('selected');
           } else {
-            item.classList.add('item-selected');
-            selectedItems.push(index);
+            // Select
+            userSelection.push(idx);
+            item.classList.add('selected');
           }
         });
       });
       
+      // Clear All
       clearBtn.addEventListener('click', () => {
-        items.forEach(item => item.classList.remove('item-selected'));
-        selectedItems = [];
+        userSelection = [];
+        gridItems.forEach(item => item.classList.remove('selected'));
       });
       
+      // Submit
       submitBtn.addEventListener('click', () => {
+        // Sort selection so comparison works (e.g. [1,2] matches [1,2])
+        const finalAnswer = userSelection.sort((a, b) => a - b);
+        
         window.dispatchEvent(new CustomEvent('challengeAnswer', { 
-          detail: { answer: selectedItems.sort((a, b) => a - b) } 
+          detail: { answer: finalAnswer } 
         }));
       });
     },
     
     check(answer) {
-      return validateArray(answer, this.correctAnswer);
+      // Compare the two arrays (User's indices vs Correct indices)
+      return JSON.stringify(answer) === JSON.stringify(this.correctAnswer);
     },
     
     cleanup() {
-      selectedItems = [];
+      userSelection = [];
     }
   };
 }
@@ -221,213 +327,374 @@ function getValidMoves(emptyIndex, gridSize) {
 }
 
 /**
- * 15. Cup Shuffle Game Challenge
+ * 15. Cup Shuffle Game Challenge (FIXED)
  */
 export function createCupShuffleChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   const cupCount = params.cupCount;
-  const ballPosition = randomInt(0, cupCount - 1);
   
-  let isShuffling = false;
+  // Track where the ball is (index 0 to cupCount-1)
+  let ballLocation = randomInt(0, cupCount - 1);
   
-  return {
+  // We need to inject some specific CSS for this game to look right
+  // without needing you to edit a separate CSS file immediately.
+  const gameStyles = `
+    <style>
+      .cup-shuffle { text-align: center; overflow: hidden; }
+      .cups-container { 
+        display: flex; 
+        justify-content: center; 
+        gap: 20px; 
+        padding: 20px; 
+        min-height: 120px;
+        position: relative;
+      }
+      .cup {
+        width: 60px;
+        height: 70px;
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        z-index: 2; /* Cups above ball */
+      }
+      .cup-img {
+        width: 100%;
+        height: 100%;
+        background: #d35400; /* Orange/Brown cup color */
+        border-radius: 4px 4px 15px 15px;
+        border: 2px solid #a04000;
+        position: relative;
+        z-index: 2;
+      }
+      .ball-obj {
+        width: 25px;
+        height: 25px;
+        background-color: #e74c3c; /* Bright Red */
+        border-radius: 50%;
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1; /* Ball behind cup initially */
+        box-shadow: inset -2px -2px 6px rgba(0,0,0,0.3);
+      }
+      /* Animation classes */
+      .cup-lift { transform: translateY(-30px); transition: transform 0.3s; }
+    </style>
+  `;
+
+  let challengeObject = {
     id: 'cup-shuffle',
     category: 'puzzle',
     difficulty: difficulty,
     title: 'Track the Ball',
-    correctAnswer: ballPosition,
-    
+    correctAnswer: null, // Will be set after shuffle
+
     async render(contentContainer, answerContainer) {
-      // Show ball initially
+      // 1. Setup HTML
       contentContainer.innerHTML = `
+        ${gameStyles}
         <div class="cup-shuffle">
-          <p class="shuffle-instruction">Watch the ball...</p>
+          <p class="shuffle-instruction" style="font-size: 1.2rem; margin-bottom: 10px;">Watch the ball...</p>
           <div class="cups-container" id="cups-container">
             ${Array.from({ length: cupCount }, (_, i) => `
-              <div class="cup" data-index="${i}">
-                <div class="cup-top"></div>
-                ${i === ballPosition ? '<div class="ball">●</div>' : ''}
+              <div class="cup" id="cup-${i}" data-id="${i}">
+                <div class="cup-img"></div>
+                ${i === ballLocation ? '<div class="ball-obj"></div>' : ''}
               </div>
             `).join('')}
           </div>
         </div>
       `;
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      answerContainer.innerHTML = `<button class="btn btn-secondary" disabled>Shuffling...</button>`;
+
+      // 2. Reveal Sequence
+      const cups = contentContainer.querySelectorAll('.cup');
+      const ballCup = cups[ballLocation];
+      const ball = ballCup.querySelector('.ball-obj');
+      const cupImg = ballCup.querySelector('.cup-img');
+
+      // Lift cup to show ball
+      await new Promise(r => setTimeout(r, 500));
+      cupImg.classList.add('cup-lift');
       
-      // Hide ball
-      const ball = contentContainer.querySelector('.ball');
-      if (ball) ball.style.opacity = '0';
+      await new Promise(r => setTimeout(r, 1000));
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Drop cup to hide ball
+      cupImg.classList.remove('cup-lift');
+      await new Promise(r => setTimeout(r, 500));
+
+      // 3. Start Shuffle
+      // Hide the ball visually by setting z-index lower or opacity
+      // (Though it's already hidden physically by the cup div sitting on top)
       
-      // Shuffle
       await this.performShuffle(contentContainer, params);
-      
-      // Show answer options
-      contentContainer.querySelector('.shuffle-instruction').textContent = 
-        'Which cup has the ball?';
-      
-      answerContainer.innerHTML = `
-        <p class="instruction">Click a cup</p>
-      `;
+
+      // 4. Ready for Input
+      contentContainer.querySelector('.shuffle-instruction').textContent = 'Which cup has the ball?';
+      answerContainer.innerHTML = `<p class="instruction">Click the correct cup</p>`;
       
       this.setupEventListeners(contentContainer);
     },
-    
+
     async performShuffle(contentContainer, params) {
-      const cupsContainer = contentContainer.querySelector('#cups-container');
-      const cups = Array.from(cupsContainer.querySelectorAll('.cup'));
-      
-      const shuffles = params.shuffleMoves;
-      
+      const container = contentContainer.querySelector('#cups-container');
+      const shuffles = params.shuffleMoves || 5;
+      const speed = params.shuffleSpeed || 400;
+
       for (let i = 0; i < shuffles; i++) {
-        const idx1 = randomInt(0, cups.length - 1);
-        let idx2 = randomInt(0, cups.length - 1);
-        while (idx2 === idx1) {
-          idx2 = randomInt(0, cups.length - 1);
-        }
+        // Get current list of cups (order changes in DOM)
+        const currentCups = Array.from(container.children);
         
-        // Animate swap
-        await this.swapCups(cups[idx1], cups[idx2], params.shuffleSpeed);
+        // Pick two random distinct indices
+        const idx1 = randomInt(0, currentCups.length - 1);
+        let idx2 = randomInt(0, currentCups.length - 1);
+        while (idx2 === idx1) idx2 = randomInt(0, currentCups.length - 1);
+
+        const cup1 = currentCups[idx1];
+        const cup2 = currentCups[idx2];
+
+        // Animate and Swap
+        await this.swapCups(cup1, cup2, speed, container);
       }
     },
-    
-    async swapCups(cup1, cup2, speed) {
-      cup1.style.transition = `transform ${speed}ms ease`;
-      cup2.style.transition = `transform ${speed}ms ease`;
-      
-      const distance = (parseInt(cup2.dataset.index) - parseInt(cup1.dataset.index)) * 100;
-      
+
+    async swapCups(cup1, cup2, speed, container) {
+      // 1. Calculate precise distance between elements
+      const x1 = cup1.offsetLeft;
+      const x2 = cup2.offsetLeft;
+      const distance = x2 - x1;
+
+      // 2. Apply transition
+      cup1.style.transition = `transform ${speed}ms ease-in-out`;
+      cup2.style.transition = `transform ${speed}ms ease-in-out`;
+
+      // 3. Move visually
       cup1.style.transform = `translateX(${distance}px)`;
       cup2.style.transform = `translateX(${-distance}px)`;
-      
+
+      // 4. Wait for animation
       await new Promise(resolve => setTimeout(resolve, speed));
+
+      // 5. Remove transition to prevent animation during DOM swap
+      cup1.style.transition = 'none';
+      cup2.style.transition = 'none';
       
-      // Swap data-index
-      const temp = cup1.dataset.index;
-      cup1.dataset.index = cup2.dataset.index;
-      cup2.dataset.index = temp;
-      
+      // 6. Reset transform
       cup1.style.transform = '';
       cup2.style.transform = '';
-      cup1.style.transition = '';
-      cup2.style.transition = '';
+
+      // 7. Actually swap DOM elements (This is key to prevent flying out!)
+      // We swap them in the HTML so they occupy the new physical space naturally
+      const parent = cup1.parentNode;
+      const sibling1 = cup1.nextSibling === cup2 ? cup1 : cup1.nextSibling;
+      
+      // Swap logic
+      const tempPlaceholder = document.createElement('div');
+      parent.insertBefore(tempPlaceholder, cup1);
+      parent.insertBefore(cup1, cup2);
+      parent.insertBefore(cup2, tempPlaceholder);
+      parent.removeChild(tempPlaceholder);
     },
-    
+
     setupEventListeners(contentContainer) {
       const cups = contentContainer.querySelectorAll('.cup');
       
-      cups.forEach((cup) => {
+      cups.forEach(cup => {
         cup.addEventListener('click', () => {
-          const answer = parseInt(cup.dataset.index);
-          window.dispatchEvent(new CustomEvent('challengeAnswer', { 
-            detail: { answer } 
-          }));
+          // Reveal this cup
+          const img = cup.querySelector('.cup-img');
+          img.classList.add('cup-lift');
+          
+          // Check if this cup holds the ball
+          const hasBall = cup.querySelector('.ball-obj') !== null;
+          
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('challengeAnswer', { 
+              detail: { answer: hasBall } 
+            }));
+          }, 800); // Wait a bit for user to see result
         });
       });
     },
-    
+
     check(answer) {
-      return answer === this.correctAnswer;
+      // Answer is boolean (true if they clicked the cup with the ball)
+      return answer === true;
     },
-    
+
     cleanup() {}
   };
+
+  return challengeObject;
 }
 
 /**
- * 16. Water Levels Puzzle Challenge
+ * 16. Water Levels Puzzle Challenge (FIXED)
  */
 export function createWaterLevelsPuzzle(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
-  const containerCount = params.containerCount;
-  
-  // Generate random water levels
+  const containerCount = params.containerCount || 5;
+
+  // 1. Generate random water levels
   const levels = Array.from({ length: containerCount }, () => 
-    randomInt(20, 80)
+    randomInt(10, 95) // 10% to 95% full
   );
+
+  // 2. The Correct Answer is simply the levels sorted low to high
+  const correctOrder = [...levels].sort((a, b) => a - b);
+
+  // 3. Current State: Shuffle the levels for the player to fix
+  let currentLevels = shuffleArray([...levels]);
   
-  const correctOrder = levels
-    .map((level, index) => ({ level, index }))
-    .sort((a, b) => a.level - b.level)
-    .map(item => item.index);
-  
-  const shuffledLevels = shuffleArray([...levels]);
-  let currentOrder = shuffledLevels.map((_, i) => i);
-  
+  // Ensure it doesn't accidentally start solved
+  while (JSON.stringify(currentLevels) === JSON.stringify(correctOrder)) {
+    currentLevels = shuffleArray([...levels]);
+  }
+
+  // Styles for this specific game
+  const waterStyles = `
+    <style>
+      .water-puzzle { text-align: center; padding: 20px; }
+      .containers-row { 
+        display: flex; 
+        justify-content: center; 
+        align-items: flex-end; 
+        gap: 15px; 
+        min-height: 200px;
+        margin-bottom: 20px;
+      }
+      .water-container {
+        width: 60px;
+        height: 150px;
+        border: 2px solid #555;
+        border-radius: 0 0 10px 10px; /* Beaker shape */
+        border-top: none;
+        position: relative;
+        background: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+        overflow: hidden; /* Keep water inside rounded corners */
+      }
+      .water-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      }
+      /* Visual feedback for selection */
+      .container-selected {
+        border-color: #f1c40f; /* Yellow highlight */
+        box-shadow: 0 0 15px #f1c40f;
+        transform: scale(1.05);
+      }
+      .water-fill {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #3498db; /* Water Blue */
+        transition: height 0.5s ease-in-out;
+        opacity: 0.8;
+      }
+      .water-label {
+        position: absolute;
+        bottom: -25px;
+        width: 100%;
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+      }
+      .puzzle-status { font-weight: bold; margin-bottom: 10px; color: #aaa; }
+    </style>
+  `;
+
   return {
     id: 'water-levels',
     category: 'puzzle',
     difficulty: difficulty,
-    title: 'Sort by Water Level (Low to High)',
+    title: 'Sort Water: Low to High',
     correctAnswer: correctOrder,
     
     render(contentContainer, answerContainer) {
       contentContainer.innerHTML = `
+        ${waterStyles}
         <div class="water-puzzle">
+          <p class="puzzle-status" id="status-text">Select a container...</p>
           <div class="containers-row" id="containers">
-            ${currentOrder.map((originalIndex, displayIndex) => {
-              const level = shuffledLevels[originalIndex];
-              return `
-                <div class="water-container" data-original="${originalIndex}" data-display="${displayIndex}">
-                  <div class="water-fill" style="height: ${level}%"></div>
-                  <div class="container-label">${displayIndex + 1}</div>
-                </div>
-              `;
-            }).join('')}
+            ${this.renderContainers(currentLevels)}
           </div>
         </div>
       `;
       
       answerContainer.innerHTML = `
-        <p class="instruction">Click two containers to swap them</p>
-        <button id="submit-btn" class="btn btn-primary">Submit</button>
+        <button id="submit-btn" class="btn btn-primary">Check Order</button>
       `;
       
       this.setupEventListeners(contentContainer, answerContainer);
     },
+
+    renderContainers(levels) {
+      return levels.map((level, index) => `
+        <div class="water-container" data-index="${index}">
+          <div class="water-fill" style="height: ${level}%"></div>
+          <div class="water-label">${level}%</div> 
+        </div>
+      `).join('');
+    },
     
     setupEventListeners(contentContainer, answerContainer) {
-      const containers = contentContainer.querySelectorAll('.water-container');
+      const containerRow = contentContainer.querySelector('#containers');
       const submitBtn = answerContainer.querySelector('#submit-btn');
-      let selectedContainer = null;
+      const statusText = contentContainer.querySelector('#status-text');
       
-      containers.forEach((container) => {
-        container.addEventListener('click', () => {
-          if (!selectedContainer) {
-            selectedContainer = container;
-            container.classList.add('container-selected');
-          } else {
-            if (selectedContainer === container) {
-              container.classList.remove('container-selected');
-              selectedContainer = null;
-            } else {
-              // Swap
-              const idx1 = parseInt(selectedContainer.dataset.display);
-              const idx2 = parseInt(container.dataset.display);
-              
-              [currentOrder[idx1], currentOrder[idx2]] = 
-              [currentOrder[idx2], currentOrder[idx1]];
-              
-              selectedContainer.classList.remove('container-selected');
-              selectedContainer = null;
-              
-              this.render(contentContainer, answerContainer);
-            }
-          }
-        });
+      let selectedIndex = null;
+      
+      // Event Delegation for clicks
+      containerRow.addEventListener('click', (e) => {
+        const target = e.target.closest('.water-container');
+        if (!target) return;
+
+        const clickedIndex = parseInt(target.dataset.index);
+
+        if (selectedIndex === null) {
+          // SELECT FIRST ITEM
+          selectedIndex = clickedIndex;
+          target.classList.add('container-selected');
+          statusText.textContent = `Selected: ${currentLevels[clickedIndex]}%. Now click another to swap.`;
+        } else if (selectedIndex === clickedIndex) {
+          // DESELECT (Clicked same one)
+          target.classList.remove('container-selected');
+          selectedIndex = null;
+          statusText.textContent = 'Select a container...';
+        } else {
+          // SWAP ACTION
+          const prevSelected = containerRow.querySelector(`.water-container[data-index="${selectedIndex}"]`);
+          if (prevSelected) prevSelected.classList.remove('container-selected');
+          
+          // Perform Swap in logic
+          [currentLevels[selectedIndex], currentLevels[clickedIndex]] = 
+          [currentLevels[clickedIndex], currentLevels[selectedIndex]];
+          
+          // Re-render immediately to show swap
+          containerRow.innerHTML = this.renderContainers(currentLevels);
+          
+          selectedIndex = null;
+          statusText.textContent = 'Swapped! Arrange Low to High.';
+        }
       });
       
       submitBtn.addEventListener('click', () => {
         window.dispatchEvent(new CustomEvent('challengeAnswer', { 
-          detail: { answer: currentOrder } 
+          detail: { answer: currentLevels } 
         }));
       });
     },
     
     check(answer) {
-      return validateArray(answer, this.correctAnswer);
+      // Simple array comparison of values
+      return JSON.stringify(answer) === JSON.stringify(this.correctAnswer);
     },
     
     cleanup() {}
@@ -435,67 +702,173 @@ export function createWaterLevelsPuzzle(difficulty) {
 }
 
 /**
- * 17. Shape Rotation Fit Challenge
+ * 17. Shape Rotation Fit Challenge (FIXED & UPGRADED)
  */
 export function createShapeRotationChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   
-  const shapes = ['L', 'T', 'Z', 'arrow'];
-  const targetShape = randomChoice(shapes);
-  const targetRotation = randomChoice([0, 90, 180, 270]);
+  // Difficulty Scaling
+  // Level 1-2: 3x3 Grid, simple shapes
+  // Level 3+: 4x4 Grid, complex scattered shapes
+  const gridSize = difficulty > 2 ? 4 : 3;
   
-  let currentRotation = randomInt(0, 3) * 90;
-  while (currentRotation === targetRotation) {
-    currentRotation = randomInt(0, 3) * 90;
+  // 1. Generate a Random Matrix Shape
+  // We create a grid where 1 = filled, 2 = anchor (colored), 0 = empty
+  const totalCells = gridSize * gridSize;
+  const cellsToFill = Math.floor(totalCells * 0.6); // Fill ~60% of the grid
+  
+  let grid = Array(totalCells).fill(0);
+  
+  // Fill random spots
+  let filledCount = 0;
+  while (filledCount < cellsToFill) {
+    const idx = randomInt(0, totalCells - 1);
+    if (grid[idx] === 0) {
+      grid[idx] = 1;
+      filledCount++;
+    }
   }
   
+  // Set one random filled spot as the "Anchor" (Red block)
+  // This ensures the shape has a distinct "up" direction, solving symmetry bugs.
+  const filledIndices = grid.map((val, idx) => val === 1 ? idx : -1).filter(i => i !== -1);
+  const anchorIndex = randomChoice(filledIndices);
+  grid[anchorIndex] = 2;
+
+  // 2. Set Rotations
+  const targetRotation = randomInt(0, 3) * 90; // 0, 90, 180, 270
+  
+  // Ensure player starts at a different rotation
+  let startRotation = randomInt(0, 3) * 90;
+  while (normalizeAngle(startRotation) === normalizeAngle(targetRotation)) {
+    startRotation = randomInt(0, 3) * 90;
+  }
+  
+  let currentRotation = startRotation;
+
+  // CSS for the matrix grid
+  const shapeStyles = `
+    <style>
+      .rotation-challenge {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+        padding: 20px;
+      }
+      .shape-container {
+        text-align: center;
+      }
+      .label-text {
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+        color: #7f8c8d;
+        font-weight: bold;
+      }
+      .matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(${gridSize}, 1fr);
+        grid-template-rows: repeat(${gridSize}, 1fr);
+        gap: 2px;
+        width: ${gridSize * 30}px;
+        height: ${gridSize * 30}px;
+        padding: 5px;
+        background: rgba(0,0,0,0.05);
+        border-radius: 8px;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .matrix-cell {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+      }
+      /* Cell Types */
+      .cell-empty { background: transparent; }
+      .cell-fill { background: #3498db; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.1); } /* Blue */
+      .cell-anchor { background: #e74c3c; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.1); } /* Red */
+
+      /* Target is semi-transparent and greyed out slightly to look like a "blueprint" */
+      .target-grid .cell-fill { background: #7f8c8d; opacity: 0.8; }
+      .target-grid .cell-anchor { background: #c0392b; opacity: 0.8; }
+
+      .controls-area {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 25px;
+      }
+    </style>
+  `;
+
   return {
     id: 'shape-rotation',
     category: 'puzzle',
     difficulty: difficulty,
-    title: 'Rotate to Match',
+    title: 'Align the Blueprint',
     correctAnswer: targetRotation,
     
     render(contentContainer, answerContainer) {
       contentContainer.innerHTML = `
+        ${shapeStyles}
         <div class="rotation-challenge">
-          <div class="target-silhouette">
-            <p>Match this:</p>
-            <div class="shape shape-${targetShape}" style="transform: rotate(${targetRotation}deg);"></div>
+          
+          <div class="shape-container">
+            <div class="label-text">Match This</div>
+            <div class="matrix-grid target-grid" style="transform: rotate(${targetRotation}deg);">
+              ${this.renderGridCells(grid)}
+            </div>
           </div>
-          <div class="rotatable-shape">
-            <p>Rotate this:</p>
-            <div class="shape shape-${targetShape} shape-active" id="active-shape" 
-                 style="transform: rotate(${currentRotation}deg);"></div>
+
+          <div style="font-size: 2rem; color: #ccc;">➔</div>
+
+          <div class="shape-container">
+            <div class="label-text">Your Shape</div>
+            <div class="matrix-grid active-grid" id="player-shape" style="transform: rotate(${currentRotation}deg);">
+              ${this.renderGridCells(grid)}
+            </div>
           </div>
+
         </div>
       `;
       
       answerContainer.innerHTML = `
-        <div class="rotation-controls">
-          <button id="rotate-left" class="btn btn-secondary">↶ Rotate Left</button>
-          <button id="rotate-right" class="btn btn-secondary">Rotate Right ↷</button>
+        <div class="controls-area">
+          <button id="rotate-left" class="btn btn-secondary" style="min-width: 60px;">↺ Left</button>
+          <button id="submit-btn" class="btn btn-primary" style="min-width: 100px;">Submit</button>
+          <button id="rotate-right" class="btn btn-secondary" style="min-width: 60px;">Right ↻</button>
         </div>
-        <button id="submit-btn" class="btn btn-primary" style="margin-top: 20px;">Submit</button>
       `;
       
       this.setupEventListeners(contentContainer, answerContainer);
     },
     
+    renderGridCells(gridData) {
+      return gridData.map(val => {
+        let className = 'cell-empty';
+        if (val === 1) className = 'cell-fill';
+        if (val === 2) className = 'cell-anchor';
+        return `<div class="matrix-cell ${className}"></div>`;
+      }).join('');
+    },
+    
     setupEventListeners(contentContainer, answerContainer) {
-      const shape = contentContainer.querySelector('#active-shape');
+      const playerShape = contentContainer.querySelector('#player-shape');
       const rotateLeft = answerContainer.querySelector('#rotate-left');
       const rotateRight = answerContainer.querySelector('#rotate-right');
       const submitBtn = answerContainer.querySelector('#submit-btn');
       
+      const updateVisuals = () => {
+        playerShape.style.transform = `rotate(${currentRotation}deg)`;
+      };
+      
       rotateLeft.addEventListener('click', () => {
-        currentRotation = (currentRotation - 90 + 360) % 360;
-        shape.style.transform = `rotate(${currentRotation}deg)`;
+        currentRotation -= 90;
+        updateVisuals();
       });
       
       rotateRight.addEventListener('click', () => {
-        currentRotation = (currentRotation + 90) % 360;
-        shape.style.transform = `rotate(${currentRotation}deg)`;
+        currentRotation += 90;
+        updateVisuals();
       });
       
       submitBtn.addEventListener('click', () => {
@@ -503,18 +876,42 @@ export function createShapeRotationChallenge(difficulty) {
           detail: { answer: currentRotation } 
         }));
       });
+      
+      // Keyboard support for fun
+      const keyHandler = (e) => {
+        if (e.key === 'ArrowLeft') { currentRotation -= 90; updateVisuals(); }
+        if (e.key === 'ArrowRight') { currentRotation += 90; updateVisuals(); }
+      };
+      document.addEventListener('keydown', keyHandler);
+      this._cleanupKey = keyHandler; // Store for cleanup
     },
     
     check(answer) {
-      return answer === this.correctAnswer;
+      const normAnswer = normalizeAngle(answer);
+      const normTarget = normalizeAngle(this.correctAnswer);
+      return normAnswer === normTarget;
     },
     
-    cleanup() {}
+    cleanup() {
+      if (this._cleanupKey) {
+        document.removeEventListener('keydown', this._cleanupKey);
+      }
+    }
   };
 }
 
 /**
- * 18. Word Unscramble Challenge
+ * Helper: Normalizes any degree to 0, 90, 180, 270
+ * Handles negative numbers (-90 -> 270) and overflow (450 -> 90)
+ */
+function normalizeAngle(degrees) {
+  // The % 360 gives remainder, but can be negative in JS (-90 % 360 = -90).
+  // We add 360 and % 360 again to ensure positive result.
+  return ((degrees % 360) + 360) % 360;
+}
+
+/**
+ * 18. Word Unscramble Challenge (pass)
  */
 export function createWordUnscrambleChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
@@ -592,70 +989,302 @@ export function createWordUnscrambleChallenge(difficulty) {
 }
 
 /**
- * 19. Cube Counting Challenge
+ * 19. Cube Counting Challenge (Mobile Optimized: Zoom + Rotate + Explode)
  */
 export function createCubeCountingChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   
-  // Simple cube stacks (2D representation)
-  const stacks = [
-    { visual: '□\n□□\n□□□', count: 6 },
-    { visual: '□□\n□□\n□□', count: 6 },
-    { visual: '□\n□\n□□□', count: 5 },
-    { visual: '□□□\n□□\n□', count: 6 },
-    { visual: '□\n□□\n□□\n□□□', count: 7 },
-    { visual: '□□\n□□\n□□\n□□', count: 8 }
-  ];
+  // Mobile Scaling: Reduce grid size slightly for very small screens if needed
+  // Level 1-2: 3x3
+  // Level 3-5: 4x4
+  // Level 6+: 5x5
+  const gridSize = difficulty < 3 ? 3 : (difficulty < 6 ? 4 : 5);
+  const maxHeight = difficulty < 3 ? 3 : (difficulty < 6 ? 4 : 5);
   
-  const stack = randomChoice(stacks);
+  // Game Mode Logic
+  const isColorMode = difficulty > 2 && Math.random() > 0.5;
+  const targetColor = 'red'; 
   
+  // Generate Cubes
+  let cubes = [];
+  let totalCount = 0;
+  let colorCount = 0;
+  
+  for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < gridSize; y++) {
+      const height = randomInt(1, maxHeight);
+      for (let z = 0; z < height; z++) {
+        // Decide color
+        const isRed = Math.random() > 0.8; // 20% chance of red
+        const color = isColorMode && isRed ? 'red' : 'blue';
+        
+        cubes.push({ x, y, z, color });
+        
+        totalCount++;
+        if (color === targetColor) colorCount++;
+      }
+    }
+  }
+
+  // Ensure playable state
+  if (isColorMode && colorCount === 0) {
+    cubes[0].color = targetColor;
+    colorCount = 1;
+  }
+
+  const correctAnswer = isColorMode ? colorCount : totalCount;
+  const missionTitle = isColorMode 
+    ? `Count <span style="color:#ff6b6b; font-weight:800;">RED</span> Cubes` 
+    : "Count <span style='font-weight:800;'>ALL</span> Cubes";
+
+  // CSS Styles (Optimized for Mobile)
+  const styles = `
+    <style>
+      .cube-game-wrapper {
+        width: 100%;
+        max-width: 500px; /* Prevent it from getting too huge on desktop */
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 15px;
+        box-sizing: border-box;
+      }
+
+      /* The 3D Scene Area */
+      .scene-viewport {
+        width: 100%;
+        height: 280px;
+        position: relative;
+        perspective: 1000px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.05);
+        border-radius: 8px;
+        background: radial-gradient(circle, #ffffff 0%, #e9ecef 100%);
+        touch-action: none; /* Prevent scrolling while touching the game area */
+      }
+
+      /* The Grid that holds cubes */
+      .cube-grid {
+        position: relative;
+        transform-style: preserve-3d;
+        /* Dynamic Transforms via CSS Vars */
+        transform: 
+          scale(var(--scale)) 
+          rotateX(-25deg) 
+          rotateY(var(--rot));
+        transition: transform 0.1s linear; /* Fast response for sliders */
+      }
+
+      .cube {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        transform-style: preserve-3d;
+        /* Positioning logic */
+        transform: 
+          translateX(calc(var(--x) * var(--gap)))
+          translateY(calc(var(--z) * -1 * var(--gap)))
+          translateZ(calc(var(--y) * var(--gap)));
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      /* Faces */
+      .face {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border: 1px solid rgba(0,0,0,0.1);
+        box-sizing: border-box;
+        backface-visibility: hidden;
+      }
+      .face-front  { transform: rotateY(  0deg) translateZ(15px); }
+      .face-back   { transform: rotateY(180deg) translateZ(15px); }
+      .face-right  { transform: rotateY( 90deg) translateZ(15px); filter: brightness(0.85); }
+      .face-left   { transform: rotateY(-90deg) translateZ(15px); filter: brightness(0.85); }
+      .face-top    { transform: rotateX( 90deg) translateZ(15px); filter: brightness(1.15); }
+      .face-bottom { transform: rotateX(-90deg) translateZ(15px); filter: brightness(0.5); }
+
+      /* Cube Colors */
+      .c-blue .face { background: #4dabf7; }
+      .c-red .face { background: #ff6b6b; }
+
+      /* Mobile Controls */
+      .controls-panel {
+        width: 100%;
+        margin-top: 15px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr; /* 3 Columns for 3 sliders */
+        gap: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #868e96;
+        text-transform: uppercase;
+      }
+
+      /* Mobile-Friendly Sliders */
+      input[type=range] {
+        -webkit-appearance: none;
+        width: 100%;
+        background: transparent;
+        margin-top: 5px;
+      }
+      
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 24px;
+        width: 24px; /* Big touch target */
+        border-radius: 50%;
+        background: #339af0;
+        cursor: pointer;
+        margin-top: -10px; /* You need to specify a margin in Chrome */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      
+      input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        cursor: pointer;
+        background: #dee2e6;
+        border-radius: 2px;
+      }
+
+      .answer-section {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        width: 100%;
+      }
+      .answer-section input {
+        flex: 1;
+        text-align: center;
+        font-size: 1.2rem;
+      }
+      .answer-section button {
+        flex: 1;
+      }
+    </style>
+  `;
+
   return {
     id: 'cube-counting',
     category: 'puzzle',
     difficulty: difficulty,
-    title: 'Count the Cubes',
-    correctAnswer: stack.count,
+    title: isColorMode ? 'Color Count' : 'Cube Count',
+    correctAnswer: correctAnswer,
     
     render(contentContainer, answerContainer) {
+      // Centering offset
+      const offset = (gridSize * 30) / 2;
+      
       contentContainer.innerHTML = `
-        <div class="cube-challenge">
-          <p class="cube-instruction">How many cubes are in this stack?</p>
-          <pre class="cube-visual">${stack.visual}</pre>
-          <p class="cube-hint">Count all visible and hidden cubes</p>
+        ${styles}
+        <div class="cube-game-wrapper">
+          <div style="font-size: 1rem; margin-bottom: 10px;">${missionTitle}</div>
+          
+          <div class="scene-viewport">
+            <div class="cube-grid" id="grid-scene" 
+                 style="--x-off: -${offset}px; --y-off: ${offset}px; margin-left: -${offset}px; margin-top: ${offset}px;">
+              ${cubes.map(c => `
+                <div class="cube c-${c.color}" style="--x: ${c.x}; --y: ${c.y}; --z: ${c.z};">
+                  <div class="face face-front"></div>
+                  <div class="face face-back"></div>
+                  <div class="face face-right"></div>
+                  <div class="face face-left"></div>
+                  <div class="face face-top"></div>
+                  <div class="face face-bottom"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="controls-panel">
+            <div class="control-group">
+              <label>Rotate</label>
+              <input type="range" id="slider-rotate" min="0" max="360" value="45">
+            </div>
+            <div class="control-group">
+              <label>Explode</label>
+              <input type="range" id="slider-explode" min="30" max="60" value="30">
+            </div>
+            <div class="control-group">
+              <label>Zoom</label>
+              <input type="range" id="slider-zoom" min="0.5" max="1.5" step="0.1" value="1.0">
+            </div>
+          </div>
         </div>
       `;
       
+      // Separate answer container logic to keep mobile layout clean
       answerContainer.innerHTML = `
-        <input 
-          type="number" 
-          id="answer-input" 
-          class="answer-input"
-          placeholder="Number of cubes"
-          autocomplete="off"
-          min="1"
-        />
-        <button id="submit-btn" class="btn btn-primary">Submit</button>
+        <div class="answer-section">
+          <input type="number" id="answer-input" class="answer-input" placeholder="?" inputmode="numeric" pattern="[0-9]*">
+          <button id="submit-btn" class="btn btn-primary">Check</button>
+        </div>
       `;
       
-      this.setupEventListeners(answerContainer);
+      this.setupEventListeners(contentContainer, answerContainer);
     },
     
-    setupEventListeners(answerContainer) {
+    setupEventListeners(contentContainer, answerContainer) {
+      const grid = contentContainer.querySelector('#grid-scene');
+      
+      const sRotate = contentContainer.querySelector('#slider-rotate');
+      const sExplode = contentContainer.querySelector('#slider-explode');
+      const sZoom = contentContainer.querySelector('#slider-zoom');
+      
+      // Unified View Update Function
+      const updateView = () => {
+        const rot = sRotate.value;
+        const gap = sExplode.value;
+        const scale = sZoom.value;
+        
+        // Apply CSS Variables for high performance updates
+        grid.style.setProperty('--rot', `${rot}deg`);
+        grid.style.setProperty('--gap', `${gap}px`);
+        grid.style.setProperty('--scale', scale);
+      };
+      
+      // Listeners
+      sRotate.addEventListener('input', updateView);
+      sExplode.addEventListener('input', updateView);
+      sZoom.addEventListener('input', updateView);
+      
+      // Init View
+      updateView();
+      
+      // Answer Logic
       const input = answerContainer.querySelector('#answer-input');
       const submitBtn = answerContainer.querySelector('#submit-btn');
       
-      input.focus();
-      
       const submit = () => {
-        const answer = parseInt(input.value);
+        if (!input.value) return;
         window.dispatchEvent(new CustomEvent('challengeAnswer', { 
-          detail: { answer } 
+          detail: { answer: parseInt(input.value) } 
         }));
       };
       
       submitBtn.addEventListener('click', submit);
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') submit();
+      
+      // Allow "Enter" key
+      input.addEventListener('keypress', (e) => { 
+        if(e.key === 'Enter') submit(); 
       });
     },
     
@@ -668,39 +1297,114 @@ export function createCubeCountingChallenge(difficulty) {
 }
 
 /**
- * 20. Same Game (Color Cluster) Challenge
+ * 20. Jewel Cluster Challenge (Fixed: Click-to-Select)
  */
 export function createSameGameChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   
-  const gridSize = 8;
-  const colors = generateColors(params.colorCount);
+  // Difficulty Settings
+  const gridSize = difficulty < 3 ? 6 : (difficulty < 6 ? 8 : 10);
+  const colorCount = difficulty < 3 ? 3 : (difficulty < 6 ? 4 : 5);
   
-  // Generate grid
+  const jewelColors = ['ruby', 'sapphire', 'emerald', 'topaz', 'amethyst'];
+  const activeColors = jewelColors.slice(0, colorCount);
+  
+  // Generate Grid
   const grid = Array.from({ length: gridSize }, () =>
-    Array.from({ length: gridSize }, () => randomChoice(colors))
+    Array.from({ length: gridSize }, () => activeColors[Math.floor(Math.random() * activeColors.length)])
   );
   
-  // Find a cluster to click
+  // Calculate Solution
   const targetCluster = findLargestCluster(grid);
   const targetSize = targetCluster.length;
   
+  // Track user selection
+  let currentSelectedSize = 0;
+
+  // CSS Styles
+  const styles = `
+    <style>
+      .jewel-game {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+      .game-status {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #555;
+        min-height: 24px;
+        transition: color 0.3s;
+      }
+      .jewel-grid {
+        display: grid;
+        grid-template-columns: repeat(${gridSize}, 1fr);
+        gap: 4px;
+        background: #2c3e50;
+        padding: 8px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        /* Prevent accidental highlighting of text */
+        user-select: none; 
+      }
+      .jewel {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 25%;
+        cursor: pointer;
+        transition: all 0.2s ease-out;
+        position: relative;
+        box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(0,0,0,0.2);
+        border: 2px solid transparent; /* Reserve space for border */
+      }
+      
+      /* Colors */
+      .jewel-ruby { background: linear-gradient(135deg, #ff6b6b, #c0392b); }
+      .jewel-sapphire { background: linear-gradient(135deg, #4dabf7, #2980b9); }
+      .jewel-emerald { background: linear-gradient(135deg, #51cf66, #27ae60); }
+      .jewel-topaz { background: linear-gradient(135deg, #fcc419, #f39c12); }
+      .jewel-amethyst { background: linear-gradient(135deg, #cc5de8, #8e44ad); }
+
+      /* Selected State */
+      .jewel.selected {
+        transform: scale(1.1);
+        z-index: 2;
+        box-shadow: 0 0 15px rgba(255,255,255,0.6);
+        border-color: white;
+      }
+      
+      /* Dimmed State (when something else is selected) */
+      .grid-has-selection .jewel:not(.selected) {
+        opacity: 0.4;
+        transform: scale(0.9);
+        filter: grayscale(0.6);
+      }
+      
+      /* Hover hint (subtle) */
+      .jewel:hover {
+        filter: brightness(1.2);
+      }
+    </style>
+  `;
+
   return {
     id: 'same-game',
     category: 'puzzle',
     difficulty: difficulty,
-    title: 'Click the Largest Color Group',
+    title: 'Find the Largest Cluster',
     correctAnswer: targetSize,
     
     render(contentContainer, answerContainer) {
       contentContainer.innerHTML = `
-        <div class="same-game">
-          <p class="game-instruction">Click the largest connected group of same color</p>
-          <div class="same-game-grid" id="game-grid">
+        ${styles}
+        <div class="jewel-game">
+          <div class="game-status" id="status-text">Select a group...</div>
+          
+          <div class="jewel-grid" id="grid-container" style="width: ${gridSize * 40}px; max-width: 100%;">
             ${grid.map((row, i) => 
               row.map((color, j) => `
-                <div class="game-cell" data-row="${i}" data-col="${j}" 
-                     style="background-color: ${color};"></div>
+                <div class="jewel jewel-${color}" data-row="${i}" data-col="${j}"></div>
               `).join('')
             ).join('')}
           </div>
@@ -708,38 +1412,82 @@ export function createSameGameChallenge(difficulty) {
       `;
       
       answerContainer.innerHTML = `
-        <p class="instruction">Click any cell in the group</p>
+        <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
+          <button id="reset-btn" class="btn btn-secondary">Clear</button>
+          <button id="submit-btn" class="btn btn-primary" disabled>Submit Selection</button>
+        </div>
       `;
       
-      this.setupEventListeners(contentContainer);
+      this.setupEventListeners(contentContainer, answerContainer);
     },
     
-    setupEventListeners(contentContainer) {
-      const cells = contentContainer.querySelectorAll('.game-cell');
-      
-      cells.forEach((cell) => {
-        cell.addEventListener('click', () => {
-          const row = parseInt(cell.dataset.row);
-          const col = parseInt(cell.dataset.col);
-          const color = grid[row][col];
+    setupEventListeners(contentContainer, answerContainer) {
+      const gridContainer = contentContainer.querySelector('#grid-container');
+      const jewels = contentContainer.querySelectorAll('.jewel');
+      const statusText = contentContainer.querySelector('#status-text');
+      const submitBtn = answerContainer.querySelector('#submit-btn');
+      const resetBtn = answerContainer.querySelector('#reset-btn');
+
+      // Click Handler for Jewels
+      jewels.forEach((jewel) => {
+        jewel.addEventListener('click', () => {
+          const r = parseInt(jewel.dataset.row);
+          const c = parseInt(jewel.dataset.col);
+          const color = grid[r][c];
           
-          const cluster = getCluster(grid, row, col, color);
-          const answer = cluster.length;
+          // 1. Calculate Cluster
+          const cluster = getCluster(grid, r, c, color);
+          currentSelectedSize = cluster.length;
           
-          window.dispatchEvent(new CustomEvent('challengeAnswer', { 
-            detail: { answer } 
-          }));
+          // 2. Update Visuals
+          // Remove old selection
+          jewels.forEach(j => j.classList.remove('selected'));
+          gridContainer.classList.add('grid-has-selection');
+          
+          // Add new selection
+          cluster.forEach(pos => {
+            const el = gridContainer.querySelector(`.jewel[data-row="${pos.row}"][data-col="${pos.col}"]`);
+            if (el) el.classList.add('selected');
+          });
+          
+          // 3. Update Text & Button
+          statusText.textContent = `Selected Group Size: ${currentSelectedSize}`;
+          statusText.style.color = "#2c3e50";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit (" + currentSelectedSize + ")";
         });
+      });
+
+      // Reset Button
+      resetBtn.addEventListener('click', () => {
+        jewels.forEach(j => j.classList.remove('selected'));
+        gridContainer.classList.remove('grid-has-selection');
+        statusText.textContent = "Select a group...";
+        currentSelectedSize = 0;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Submit Selection";
+      });
+
+      // Submit Button
+      submitBtn.addEventListener('click', () => {
+        if (currentSelectedSize === 0) return;
+        
+        window.dispatchEvent(new CustomEvent('challengeAnswer', { 
+          detail: { answer: currentSelectedSize } 
+        }));
       });
     },
     
     check(answer) {
+      // Logic: The answer is correct if it equals the largest possible cluster size
       return validateNumber(answer, this.correctAnswer);
     },
     
     cleanup() {}
   };
 }
+
+// --- Recursive Logic (Standard) ---
 
 function getCluster(grid, row, col, color, visited = new Set()) {
   const key = `${row},${col}`;
@@ -776,7 +1524,6 @@ function findLargestCluster(grid) {
       }
     }
   }
-  
   return largest;
 }
 
@@ -786,50 +1533,66 @@ function findLargestCluster(grid) {
  */
 import { registerChallenge } from './registry.js';
 
-registerChallenge('drag-drop-sorting', 'puzzle', createDragDropSortingChallenge, {
-  name: 'Sorting',
-  description: 'Sort items by category',
-  minDifficulty: 1
+// corrected
+registerChallenge('number-selection', 'puzzle', createNumberSelectionChallenge, {
+  name: 'Number Hunt',
+  description: 'Tap all numbers that match the rule',
+  minDifficulty: 1,
+  baseTime: 60
 });
 
+// corrected
 registerChallenge('tile-shuffle', 'puzzle', createTileShufflePuzzle, {
   name: 'Tile Puzzle',
   description: 'Arrange tiles in order',
-  minDifficulty: 3
+  minDifficulty: 3,
+  baseTime: 90
 });
 
+// corrected
 registerChallenge('cup-shuffle', 'puzzle', createCupShuffleChallenge, {
   name: 'Cup Shuffle',
   description: 'Track the ball',
-  minDifficulty: 1
+  minDifficulty: 1,
+  baseTime: 45
 });
 
+// corrected
 registerChallenge('water-levels', 'puzzle', createWaterLevelsPuzzle, {
   name: 'Water Levels',
   description: 'Sort containers by level',
-  minDifficulty: 2
+  minDifficulty: 2,
+  baseTime: 45
 });
 
+// corrected
 registerChallenge('shape-rotation', 'puzzle', createShapeRotationChallenge, {
   name: 'Shape Rotation',
   description: 'Rotate shape to match',
-  minDifficulty: 2
+  minDifficulty: 2,
+  baseTime: 35
 });
 
+// corrected
 registerChallenge('word-unscramble', 'puzzle', createWordUnscrambleChallenge, {
   name: 'Word Unscramble',
   description: 'Unscramble letters',
-  minDifficulty: 1
+  minDifficulty: 1,
+  baseTime: 60
 });
 
+// corrected
 registerChallenge('cube-counting', 'puzzle', createCubeCountingChallenge, {
   name: 'Cube Counting',
   description: 'Count cubes in stack',
-  minDifficulty: 4
+  minDifficulty: 4,
+  baseTime: 65
 });
 
+// corrected
 registerChallenge('same-game', 'puzzle', createSameGameChallenge, {
   name: 'Color Cluster',
   description: 'Find largest color group',
-  minDifficulty: 3
+  minDifficulty: 3,
+  baseTime: 45
 });

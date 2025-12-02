@@ -14,7 +14,7 @@ class ChallengeRegistry {
    * @param {string} id - Unique identifier for the challenge
    * @param {string} category - 'math', 'logic', 'memory', 'puzzle'
    * @param {Function} factory - Function that creates challenge instance
-   * @param {Object} metadata - Optional metadata (name, description, minDifficulty)
+   * @param {Object} metadata - Optional metadata (name, description, minDifficulty, baseTime)
    */
   register(id, category, factory, metadata = {}) {
     if (this.challenges.has(id)) {
@@ -29,7 +29,9 @@ class ChallengeRegistry {
         name: metadata.name || id,
         description: metadata.description || '',
         minDifficulty: metadata.minDifficulty || 1,
-        maxDifficulty: metadata.maxDifficulty || Infinity
+        maxDifficulty: metadata.maxDifficulty || Infinity,
+        // FIX: Ensure 'baseTime' is always defined, defaulting to 20 seconds.
+        baseTime: metadata.baseTime || 20 
       }
     });
 
@@ -37,9 +39,9 @@ class ChallengeRegistry {
   }
 
   /**
-   * Get a random challenge factory
+   * Get a random challenge factory object (not the instance!)
    * @param {number} difficulty - Current difficulty level
-   * @returns {Object} Challenge instance
+   * @returns {Object} Challenge factory object {id, category, factory, metadata}
    */
   getRandomChallenge(difficulty) {
     // Filter challenges available at current difficulty
@@ -49,25 +51,29 @@ class ChallengeRegistry {
     });
 
     if (available.length === 0) {
+      // NOTE: This throws an error, which the engine catches and ends the game.
       throw new Error('No challenges available at this difficulty level');
     }
 
-    // Pick random challenge
+    // Pick random challenge factory object
     const randomIndex = Math.floor(Math.random() * available.length);
     const selected = available[randomIndex];
 
-    // Create instance using factory
-    return selected.factory(difficulty);
+    // FIX: Return the factory object, not the instantiated challenge.
+    // The GameEngine needs the metadata (including baseTime) before it calls .factory().
+    return selected;
   }
 
   /**
    * Get challenge by ID
+   * @returns {Object} Challenge instance
    */
   getChallenge(id, difficulty) {
     const challenge = this.challenges.get(id);
     if (!challenge) {
       throw new Error(`Challenge "${id}" not found`);
     }
+    // Correctly return the instantiated challenge here, as requested by ID
     return challenge.factory(difficulty);
   }
 
