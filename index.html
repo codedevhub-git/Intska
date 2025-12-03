@@ -3,57 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4CAF50">
-  <meta name="description" content="Intska - Test your mental skills with 20+ different puzzle types">
-  
-  <!-- PWA Meta Tags -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Intska">
-  
-  <!-- Manifest -->
-  <link rel="manifest" href="./manifest.json">
-  
-  <!-- Icons -->
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  
   <title>Intska</title>
-  
-  <!-- Stylesheets -->
   <link rel="stylesheet" href="./css/global.css">
   <link rel="stylesheet" href="./css/landing.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 </head>
 <body>
   <div class="landing-container">
     
-    <!-- Header -->
     <header class="landing-header">
       <div class="logo">
-        <div class="logo-icon">🧠</div>
-        <h1 class="logo-text">Brain Challenge</h1>
+        <span class="logo-icon">🧠</span>
+        <div class="header-text">
+            <h1 class="logo-text">Brain Challenge</h1>
+            <p class="tagline">Test Your Mental Skills</p>
+        </div>
       </div>
-      <p class="tagline">Test Your Mental Skills</p>
     </header>
+    
 
-    <!-- Stats Section -->
     <section class="stats-section">
-      <div class="stat-card stat-main">
-        <div class="stat-label">High Score</div>
-        <div class="stat-value" id="high-score">0</div>
-      </div>
+      
+      <div class="top-stats-grid">
+        <div class="stat-card stat-main">
+          <div class="stat-label">High Score</div>
+          <div class="stat-value" id="high-score">0</div>
+        </div>
 
-      <div class="stat-card stat-rank">
-        <div class="stat-label">Rank</div>
-        <div class="stat-value rank" id="rank">Beginner</div>
+        <div class="stat-card stat-rank">
+          <div class="stat-label">Rank</div>
+          <div class="stat-value rank" id="rank">Beginner</div>
+        </div>
       </div>
 
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-label">Games Played</div>
+          <div class="stat-label">Games</div>
           <div class="stat-value" id="total-games">0</div>
         </div>
 
@@ -74,61 +60,37 @@
       </div>
     </section>
 
-    <!-- Recent Games -->
-    <section class="recent-section">
-      <h2 class="section-title">Recent Games</h2>
-      <div class="recent-games" id="recent-games">
-        <p class="no-games">No games played yet</p>
-      </div>
-    </section>
-
-    <!-- Game Info -->
-    <section class="info-section">
-      <h2 class="section-title">How to Play</h2>
-      <div class="info-cards">
-        <div class="info-card">
-          <div class="info-icon">❤️</div>
-          <h3>5 Lives</h3>
-          <p>Start with 5 hearts. Lose one for each wrong answer.</p>
-        </div>
-
-        <div class="info-card">
-          <div class="info-icon">🎯</div>
-          <h3>Win 3, Get 1</h3>
-          <p>Get 3 correct in a row to earn back a heart.</p>
-        </div>
-
-        <div class="info-card">
-          <div class="info-icon">⚡</div>
-          <h3>20 Challenge Types</h3>
-          <p>Math, logic, memory, and puzzle challenges.</p>
-        </div>
-
-        <div class="info-card">
-          <div class="info-icon">📈</div>
-          <h3>Progressive Difficulty</h3>
-          <p>Challenges get harder as you advance.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Start Button -->
     <div class="start-section">
       <button id="start-btn" class="btn btn-start">
-        <span class="btn-text">Start Playing</span>
+        <span class="btn-text">PLAY NOW</span>
         <span class="btn-icon">▶</span>
       </button>
     </div>
 
-    <!-- Footer -->
-    <footer class="landing-footer">
-      <button id="reset-stats-btn" class="btn-link">Reset Stats</button>
-      <p class="version">v1.0.0</p>
-    </footer>
+    <details class="how-to-play">
+        <summary>How to Play & Recent Games ▾</summary>
+        
+        <div class="hidden-content">
+            <div class="info-grid">
+                <div class="info-mini">❤️ 5 Lives</div>
+                <div class="info-mini">🎯 Streak Bonus</div>
+                <div class="info-mini">⚡ 20+ Modes</div>
+            </div>
+            
+            <h3 class="mt-md">Recent Games</h3>
+            <div class="recent-games" id="recent-games">
+                <p class="no-games">No games played yet</p>
+            </div>
+            
+            <footer class="landing-footer">
+                <button id="reset-stats-btn" class="btn-link">Reset Stats</button>
+                <p class="version">v1.0.0</p>
+            </footer>
+        </div>
+    </details>
 
   </div>
 
-  <!-- Scripts -->
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
