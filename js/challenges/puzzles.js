@@ -989,15 +989,12 @@ export function createWordUnscrambleChallenge(difficulty) {
 }
 
 /**
- * 19. Cube Counting Challenge (Mobile Optimized: Zoom + Rotate + Explode)
+ * 19. Cube Counting Challenge (Mobile Optimized: Touch + Pinch + Rotate + Pan)
  */
 export function createCubeCountingChallenge(difficulty) {
   const params = getDifficultyParams('puzzle', difficulty);
   
   // Mobile Scaling: Reduce grid size slightly for very small screens if needed
-  // Level 1-2: 3x3
-  // Level 3-5: 4x4
-  // Level 6+: 5x5
   const gridSize = difficulty < 3 ? 3 : (difficulty < 6 ? 4 : 5);
   const maxHeight = difficulty < 3 ? 3 : (difficulty < 6 ? 4 : 5);
   
@@ -1014,8 +1011,7 @@ export function createCubeCountingChallenge(difficulty) {
     for (let y = 0; y < gridSize; y++) {
       const height = randomInt(1, maxHeight);
       for (let z = 0; z < height; z++) {
-        // Decide color
-        const isRed = Math.random() > 0.8; // 20% chance of red
+        const isRed = Math.random() > 0.8;
         const color = isColorMode && isRed ? 'red' : 'blue';
         
         cubes.push({ x, y, z, color });
@@ -1026,7 +1022,6 @@ export function createCubeCountingChallenge(difficulty) {
     }
   }
 
-  // Ensure playable state
   if (isColorMode && colorCount === 0) {
     cubes[0].color = targetColor;
     colorCount = 1;
@@ -1037,12 +1032,11 @@ export function createCubeCountingChallenge(difficulty) {
     ? `Count <span style="color:#ff6b6b; font-weight:800;">RED</span> Cubes` 
     : "Count <span style='font-weight:800;'>ALL</span> Cubes";
 
-  // CSS Styles (Optimized for Mobile)
   const styles = `
     <style>
       .cube-game-wrapper {
         width: 100%;
-        max-width: 500px; /* Prevent it from getting too huge on desktop */
+        max-width: 500px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
@@ -1054,32 +1048,35 @@ export function createCubeCountingChallenge(difficulty) {
         box-sizing: border-box;
       }
 
-      /* The 3D Scene Area */
       .scene-viewport {
         width: 100%;
-        height: 280px;
+        height: 320px;
         position: relative;
-        perspective: 1000px;
+        perspective: 1200px;
         display: flex;
         justify-content: center;
         align-items: center;
         overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 2px solid #dee2e6;
         border-radius: 8px;
         background: radial-gradient(circle, #ffffff 0%, #e9ecef 100%);
-        touch-action: none; /* Prevent scrolling while touching the game area */
+        touch-action: none;
+        cursor: grab;
+      }
+      
+      .scene-viewport:active {
+        cursor: grabbing;
       }
 
-      /* The Grid that holds cubes */
       .cube-grid {
         position: relative;
         transform-style: preserve-3d;
-        /* Dynamic Transforms via CSS Vars */
         transform: 
-          scale(var(--scale)) 
-          rotateX(-25deg) 
-          rotateY(var(--rot));
-        transition: transform 0.1s linear; /* Fast response for sliders */
+          translate(var(--pan-x, 0px), var(--pan-y, 0px))
+          scale(var(--scale, 1)) 
+          rotateX(var(--rot-x, -25deg)) 
+          rotateY(var(--rot-y, 45deg));
+        transition: transform 0.05s linear;
       }
 
       .cube {
@@ -1087,15 +1084,13 @@ export function createCubeCountingChallenge(difficulty) {
         width: 30px;
         height: 30px;
         transform-style: preserve-3d;
-        /* Positioning logic */
         transform: 
-          translateX(calc(var(--x) * var(--gap)))
-          translateY(calc(var(--z) * -1 * var(--gap)))
-          translateZ(calc(var(--y) * var(--gap)));
+          translateX(calc(var(--x) * var(--gap, 30px)))
+          translateY(calc(var(--z) * -1 * var(--gap, 30px)))
+          translateZ(calc(var(--y) * var(--gap, 30px)));
         transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
-      /* Faces */
       .face {
         position: absolute;
         width: 30px;
@@ -1111,16 +1106,14 @@ export function createCubeCountingChallenge(difficulty) {
       .face-top    { transform: rotateX( 90deg) translateZ(15px); filter: brightness(1.15); }
       .face-bottom { transform: rotateX(-90deg) translateZ(15px); filter: brightness(0.5); }
 
-      /* Cube Colors */
       .c-blue .face { background: #4dabf7; }
       .c-red .face { background: #ff6b6b; }
 
-      /* Mobile Controls */
       .controls-panel {
         width: 100%;
         margin-top: 15px;
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr; /* 3 Columns for 3 sliders */
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
         background: white;
         padding: 10px;
@@ -1138,7 +1131,6 @@ export function createCubeCountingChallenge(difficulty) {
         text-transform: uppercase;
       }
 
-      /* Mobile-Friendly Sliders */
       input[type=range] {
         -webkit-appearance: none;
         width: 100%;
@@ -1149,11 +1141,11 @@ export function createCubeCountingChallenge(difficulty) {
       input[type=range]::-webkit-slider-thumb {
         -webkit-appearance: none;
         height: 24px;
-        width: 24px; /* Big touch target */
+        width: 24px;
         border-radius: 50%;
         background: #339af0;
         cursor: pointer;
-        margin-top: -10px; /* You need to specify a margin in Chrome */
+        margin-top: -10px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       }
       
@@ -1163,6 +1155,32 @@ export function createCubeCountingChallenge(difficulty) {
         cursor: pointer;
         background: #dee2e6;
         border-radius: 2px;
+      }
+      
+      input[type=range]::-moz-range-thumb {
+        height: 24px;
+        width: 24px;
+        border-radius: 50%;
+        background: #339af0;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      
+      input[type=range]::-moz-range-track {
+        width: 100%;
+        height: 4px;
+        cursor: pointer;
+        background: #dee2e6;
+        border-radius: 2px;
+      }
+
+      .touch-hint {
+        font-size: 0.7rem;
+        color: #868e96;
+        text-align: center;
+        margin-top: 8px;
+        font-style: italic;
       }
 
       .answer-section {
@@ -1179,6 +1197,21 @@ export function createCubeCountingChallenge(difficulty) {
       .answer-section button {
         flex: 1;
       }
+      
+      .reset-btn {
+        background: #868e96;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 8px;
+        width: 100%;
+      }
+      .reset-btn:active {
+        background: #495057;
+      }
     </style>
   `;
 
@@ -1188,9 +1221,9 @@ export function createCubeCountingChallenge(difficulty) {
     difficulty: difficulty,
     title: isColorMode ? 'Color Count' : 'Cube Count',
     correctAnswer: correctAnswer,
+    touchState: null,
     
     render(contentContainer, answerContainer) {
-      // Centering offset
       const offset = (gridSize * 30) / 2;
       
       contentContainer.innerHTML = `
@@ -1198,7 +1231,7 @@ export function createCubeCountingChallenge(difficulty) {
         <div class="cube-game-wrapper">
           <div style="font-size: 1rem; margin-bottom: 10px;">${missionTitle}</div>
           
-          <div class="scene-viewport">
+          <div class="scene-viewport" id="viewport">
             <div class="cube-grid" id="grid-scene" 
                  style="--x-off: -${offset}px; --y-off: ${offset}px; margin-left: -${offset}px; margin-top: ${offset}px;">
               ${cubes.map(c => `
@@ -1213,6 +1246,10 @@ export function createCubeCountingChallenge(difficulty) {
               `).join('')}
             </div>
           </div>
+          
+          <div class="touch-hint">
+            👆 Drag to rotate • 🤏 Pinch to zoom • Two fingers to pan
+          </div>
 
           <div class="controls-panel">
             <div class="control-group">
@@ -1221,17 +1258,18 @@ export function createCubeCountingChallenge(difficulty) {
             </div>
             <div class="control-group">
               <label>Explode</label>
-              <input type="range" id="slider-explode" min="30" max="60" value="30">
+              <input type="range" id="slider-explode" min="30" max="80" value="30">
             </div>
             <div class="control-group">
               <label>Zoom</label>
-              <input type="range" id="slider-zoom" min="0.5" max="1.5" step="0.1" value="1.0">
+              <input type="range" id="slider-zoom" min="0.5" max="2" step="0.1" value="1.0">
             </div>
           </div>
+          
+          <button class="reset-btn" id="reset-view">Reset View</button>
         </div>
       `;
       
-      // Separate answer container logic to keep mobile layout clean
       answerContainer.innerHTML = `
         <div class="answer-section">
           <input type="number" id="answer-input" class="answer-input" placeholder="?" inputmode="numeric" pattern="[0-9]*">
@@ -1244,32 +1282,216 @@ export function createCubeCountingChallenge(difficulty) {
     
     setupEventListeners(contentContainer, answerContainer) {
       const grid = contentContainer.querySelector('#grid-scene');
+      const viewport = contentContainer.querySelector('#viewport');
       
       const sRotate = contentContainer.querySelector('#slider-rotate');
       const sExplode = contentContainer.querySelector('#slider-explode');
       const sZoom = contentContainer.querySelector('#slider-zoom');
+      const resetBtn = contentContainer.querySelector('#reset-view');
       
-      // Unified View Update Function
-      const updateView = () => {
-        const rot = sRotate.value;
-        const gap = sExplode.value;
-        const scale = sZoom.value;
-        
-        // Apply CSS Variables for high performance updates
-        grid.style.setProperty('--rot', `${rot}deg`);
-        grid.style.setProperty('--gap', `${gap}px`);
-        grid.style.setProperty('--scale', scale);
+      // State
+      let rotX = -25;
+      let rotY = 45;
+      let scale = 1.0;
+      let gap = 30;
+      let panX = 0;
+      let panY = 0;
+      
+      // Touch state
+      this.touchState = {
+        touches: [],
+        lastDistance: 0,
+        lastAngle: 0,
+        lastX: 0,
+        lastY: 0,
+        isDragging: false
       };
       
-      // Listeners
-      sRotate.addEventListener('input', updateView);
-      sExplode.addEventListener('input', updateView);
-      sZoom.addEventListener('input', updateView);
+      // Update view
+      const updateView = () => {
+        grid.style.setProperty('--rot-x', `${rotX}deg`);
+        grid.style.setProperty('--rot-y', `${rotY}deg`);
+        grid.style.setProperty('--gap', `${gap}px`);
+        grid.style.setProperty('--scale', scale);
+        grid.style.setProperty('--pan-x', `${panX}px`);
+        grid.style.setProperty('--pan-y', `${panY}px`);
+        
+        // Sync sliders
+        sRotate.value = rotY;
+        sZoom.value = scale;
+        sExplode.value = gap;
+      };
       
-      // Init View
+      // Slider listeners
+      sRotate.addEventListener('input', (e) => {
+        rotY = parseFloat(e.target.value);
+        updateView();
+      });
+      
+      sExplode.addEventListener('input', (e) => {
+        gap = parseFloat(e.target.value);
+        updateView();
+      });
+      
+      sZoom.addEventListener('input', (e) => {
+        scale = parseFloat(e.target.value);
+        updateView();
+      });
+      
+      // Reset button
+      resetBtn.addEventListener('click', () => {
+        rotX = -25;
+        rotY = 45;
+        scale = 1.0;
+        gap = 30;
+        panX = 0;
+        panY = 0;
+        updateView();
+      });
+      
+      // Helper: Get distance between two touches
+      const getDistance = (t1, t2) => {
+        const dx = t2.clientX - t1.clientX;
+        const dy = t2.clientY - t1.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+      
+      // Helper: Get angle between two touches
+      const getAngle = (t1, t2) => {
+        return Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+      };
+      
+      // Helper: Get center point of two touches
+      const getCenter = (t1, t2) => {
+        return {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2
+        };
+      };
+      
+      // Touch Start
+      viewport.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.touchState.touches = Array.from(e.touches);
+        
+        if (e.touches.length === 2) {
+          // Two finger gesture - prepare for pinch/pan
+          this.touchState.lastDistance = getDistance(e.touches[0], e.touches[1]);
+          this.touchState.lastAngle = getAngle(e.touches[0], e.touches[1]);
+          const center = getCenter(e.touches[0], e.touches[1]);
+          this.touchState.lastX = center.x;
+          this.touchState.lastY = center.y;
+        } else if (e.touches.length === 1) {
+          // Single finger - prepare for rotation
+          this.touchState.isDragging = true;
+          this.touchState.lastX = e.touches[0].clientX;
+          this.touchState.lastY = e.touches[0].clientY;
+        }
+      });
+      
+      // Touch Move
+      viewport.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        
+        if (e.touches.length === 2) {
+          // Two finger gestures
+          const currentDistance = getDistance(e.touches[0], e.touches[1]);
+          const currentAngle = getAngle(e.touches[0], e.touches[1]);
+          const center = getCenter(e.touches[0], e.touches[1]);
+          
+          // PINCH TO ZOOM
+          if (this.touchState.lastDistance > 0) {
+            const scaleChange = currentDistance / this.touchState.lastDistance;
+            scale *= scaleChange;
+            scale = Math.max(0.5, Math.min(2, scale)); // Clamp
+          }
+          
+          // TWO FINGER PAN
+          const dx = center.x - this.touchState.lastX;
+          const dy = center.y - this.touchState.lastY;
+          panX += dx;
+          panY += dy;
+          
+          this.touchState.lastDistance = currentDistance;
+          this.touchState.lastAngle = currentAngle;
+          this.touchState.lastX = center.x;
+          this.touchState.lastY = center.y;
+          
+          updateView();
+          
+        } else if (e.touches.length === 1 && this.touchState.isDragging) {
+          // Single finger rotation
+          const dx = e.touches[0].clientX - this.touchState.lastX;
+          const dy = e.touches[0].clientY - this.touchState.lastY;
+          
+          rotY += dx * 0.5;
+          rotX += dy * 0.5;
+          
+          // Clamp rotX to prevent flipping too much
+          rotX = Math.max(-80, Math.min(10, rotX));
+          
+          this.touchState.lastX = e.touches[0].clientX;
+          this.touchState.lastY = e.touches[0].clientY;
+          
+          updateView();
+        }
+      });
+      
+      // Touch End
+      viewport.addEventListener('touchend', (e) => {
+        if (e.touches.length === 0) {
+          this.touchState.isDragging = false;
+          this.touchState.lastDistance = 0;
+        }
+      });
+      
+      // Mouse support (for desktop testing)
+      let mouseDown = false;
+      let lastMouseX = 0;
+      let lastMouseY = 0;
+      
+      viewport.addEventListener('mousedown', (e) => {
+        mouseDown = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      });
+      
+      viewport.addEventListener('mousemove', (e) => {
+        if (!mouseDown) return;
+        
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        
+        rotY += dx * 0.5;
+        rotX += dy * 0.5;
+        rotX = Math.max(-80, Math.min(10, rotX));
+        
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        
+        updateView();
+      });
+      
+      viewport.addEventListener('mouseup', () => {
+        mouseDown = false;
+      });
+      
+      viewport.addEventListener('mouseleave', () => {
+        mouseDown = false;
+      });
+      
+      // Mouse wheel zoom
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        scale += e.deltaY * -0.001;
+        scale = Math.max(0.5, Math.min(2, scale));
+        updateView();
+      }, { passive: false });
+      
+      // Init
       updateView();
       
-      // Answer Logic
+      // Answer submission
       const input = answerContainer.querySelector('#answer-input');
       const submitBtn = answerContainer.querySelector('#submit-btn');
       
@@ -1281,8 +1503,6 @@ export function createCubeCountingChallenge(difficulty) {
       };
       
       submitBtn.addEventListener('click', submit);
-      
-      // Allow "Enter" key
       input.addEventListener('keypress', (e) => { 
         if(e.key === 'Enter') submit(); 
       });
@@ -1292,7 +1512,9 @@ export function createCubeCountingChallenge(difficulty) {
       return validateNumber(answer, this.correctAnswer);
     },
     
-    cleanup() {}
+    cleanup() {
+      this.touchState = null;
+    }
   };
 }
 
