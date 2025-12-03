@@ -6,7 +6,7 @@
  */
 
 // CHANGE THIS VERSION NUMBER whenever you update CSS/JS/HTML
-const CACHE_NAME = 'brain-challenge-v4'; 
+const CACHE_NAME = 'brain-challenge-v1.1.1'; 
 
 const urlsToCache = [
   './',

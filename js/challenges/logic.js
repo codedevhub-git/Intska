@@ -15,87 +15,127 @@ import { registerChallenge } from './registry.js';
 // --- Shared Helper: Numpad (Copy from Math module to ensure standalone functionality) ---
 function createNumpad(container, onSubmit) {
   let currentValue = '';
+
   const styles = `
     <style>
-      .logic-display-area {
-        background: #f1f2f6;
-        border: 2px solid #dfe4ea;
-        border-radius: 12px;
-        padding: 10px 15px;
-        margin-bottom: 15px;
-        text-align: center;
-        font-family: 'Courier New', monospace;
-        font-size: 2rem;
-        min-height: 50px;
-        color: #2f3542;
+      .math-display-area {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        text-align: right;
+        font-family: 'SF Mono', 'Courier New', monospace;
+        font-size: 2.2rem;
+        min-height: 60px;
+        color: white;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
         display: flex;
         align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        justify-content: flex-end;
+        overflow: hidden;
+        font-weight: 700;
       }
-      .logic-numpad {
+      .math-numpad {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        gap: 10px;
         width: 100%;
-        max-width: 350px;
+        max-width: 320px;
         margin: 0 auto;
       }
-      .logic-num-btn {
+      .num-btn {
         background: white;
-        border: 1px solid #ced6e0;
-        border-radius: 10px;
-        padding: 15px 0;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 0;
         font-size: 1.4rem;
-        font-weight: 600;
-        color: #2f3542;
+        font-weight: 700;
+        color: #1e293b;
         cursor: pointer;
-        box-shadow: 0 4px 0 #a4b0be;
+        box-shadow: 0 4px 0 #cbd5e1, 0 4px 12px rgba(0,0,0,0.1);
         touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: all 0.1s;
       }
-      .logic-num-btn:active { transform: translateY(4px); box-shadow: none; }
-      .l-btn-submit { background-color: #2ed573; color: white; border-color: #26af61; box-shadow: 0 4px 0 #26af61; }
-      .l-btn-clear { background-color: #ff4757; color: white; border-color: #e04050; box-shadow: 0 4px 0 #e04050; }
+      .num-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #cbd5e1, 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .btn-submit { 
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white; 
+        box-shadow: 0 4px 0 #047857, 0 4px 12px rgba(16, 185, 129, 0.3);
+        font-size: 1.2rem;
+      }
+      .btn-submit:active {
+        box-shadow: 0 0 0 #047857, 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+      .btn-clear { 
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white; 
+        box-shadow: 0 4px 0 #b91c1c, 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+      .btn-clear:active {
+        box-shadow: 0 0 0 #b91c1c, 0 2px 8px rgba(239, 68, 68, 0.3);
+      }
+      .btn-special {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 0 #1d4ed8, 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+      .btn-special:active {
+        box-shadow: 0 0 0 #1d4ed8, 0 2px 8px rgba(59, 130, 246, 0.3);
+      }
     </style>
   `;
 
   container.innerHTML = `
     ${styles}
-    <div class="logic-display-area" id="logic-input-display">?</div>
-    <div class="logic-numpad">
-      <button class="logic-num-btn" data-val="1">1</button>
-      <button class="logic-num-btn" data-val="2">2</button>
-      <button class="logic-num-btn" data-val="3">3</button>
-      <button class="logic-num-btn" data-val="4">4</button>
-      <button class="logic-num-btn" data-val="5">5</button>
-      <button class="logic-num-btn" data-val="6">6</button>
-      <button class="logic-num-btn" data-val="7">7</button>
-      <button class="logic-num-btn" data-val="8">8</button>
-      <button class="logic-num-btn" data-val="9">9</button>
-      <button class="logic-num-btn l-btn-clear" data-action="clear">C</button>
-      <button class="logic-num-btn" data-val="0">0</button>
-      <button class="logic-num-btn l-btn-submit" data-action="submit">↵</button>
+    <div class="math-display-area" id="calc-display">?</div>
+    <div class="math-numpad">
+      <button class="num-btn" data-val="7">7</button>
+      <button class="num-btn" data-val="8">8</button>
+      <button class="num-btn" data-val="9">9</button>
+      
+      <button class="num-btn" data-val="4">4</button>
+      <button class="num-btn" data-val="5">5</button>
+      <button class="num-btn" data-val="6">6</button>
+      
+      <button class="num-btn" data-val="1">1</button>
+      <button class="num-btn" data-val="2">2</button>
+      <button class="num-btn" data-val="3">3</button>
+      
+      <button class="num-btn btn-special" data-val=".">.</button>
+      <button class="num-btn" data-val="0">0</button>
+      <button class="num-btn btn-special" data-val="-">−</button>
+      
+      <button class="num-btn btn-clear" data-action="clear">C</button>
+      <button class="num-btn btn-submit" data-action="submit" style="grid-column: span 2;">✓ Submit</button>
     </div>
   `;
 
-  const display = container.querySelector('#logic-input-display');
-  const buttons = container.querySelectorAll('.logic-num-btn');
+  const display = container.querySelector('#calc-display');
+  const buttons = container.querySelectorAll('.num-btn');
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.dataset.val;
       const action = btn.dataset.action;
+
       if (val !== undefined) {
-        if (currentValue.length < 6) {
-          currentValue += val;
-          display.textContent = currentValue;
-        }
+        if (val === '.' && currentValue.includes('.')) return;
+        if (val === '-' && currentValue.length > 0) return;
+        if (currentValue.length >= 10) return;
+        
+        currentValue += val;
+        display.textContent = currentValue;
       } else if (action === 'clear') {
         currentValue = '';
         display.textContent = '?';
       } else if (action === 'submit') {
-        if (currentValue === '') return;
-        onSubmit(parseInt(currentValue, 10));
+        if (currentValue === '' || currentValue === '.' || currentValue === '-') return;
+        onSubmit(parseFloat(currentValue));
       }
     });
   });
@@ -172,34 +212,126 @@ export function createSequencePredictionChallenge(difficulty) {
 }
 
 /**
- * 6. Odd One Out Challenge (Emoji Grid)
+ * 6. Odd One Out Challenge (ACTUALLY HARD VERSION)
  */
 export function createOddOneOutChallenge(difficulty) {
   const params = getDifficultyParams('logic', difficulty);
   
-  // Use Emojis instead of CSS shapes for better mobile visuals
-  const themes = [
-    { base: '🍎', odd: '🍅' }, // Red round
-    { base: '🐱', odd: '🐯' }, // Cats
-    { base: '⌚', odd: '⏰' }, // Clocks
-    { base: '🌑', odd: '🌚' }, // Moons
-    { base: '🔒', odd: '🔓' }  // Locks
-  ];
-  
-  const theme = randomChoice(themes);
-  const itemCount = difficulty < 3 ? 9 : (difficulty < 6 ? 12 : 16); // 3x3, 3x4, or 4x4
+  const itemCount = difficulty < 3 ? 9 : (difficulty < 6 ? 12 : 16);
   const oddIndex = randomInt(0, itemCount - 1);
+  
+  // DIFFICULTY-BASED THEMES
+  let theme, renderType;
+  
+  if (difficulty <= 2) {
+    // EASY: Slightly different shades or sizes
+    const color = randomChoice(['#3498db', '#e74c3c', '#2ecc71', '#f39c12']);
+    theme = {
+      base: { color: color, size: 50 },
+      odd: { color: color, size: 58 } // 16% bigger - noticeable but requires attention
+    };
+    renderType = 'circle-size';
+    
+  } else if (difficulty <= 5) {
+    // MEDIUM: Very similar colors (shade difference)
+    const themes = [
+      { base: '#3498db', odd: '#5dade2' }, // Blue vs Light Blue
+      { base: '#e74c3c', odd: '#ec7063' }, // Red vs Light Red
+      { base: '#2ecc71', odd: '#58d68d' }, // Green vs Light Green
+      { base: '#9b59b6', odd: '#af7ac5' }, // Purple vs Light Purple
+    ];
+    const selected = randomChoice(themes);
+    theme = { base: selected.base, odd: selected.odd };
+    renderType = 'circle-color';
+    
+  } else if (difficulty <= 8) {
+    // HARD: Shape orientation or pattern differences
+    const patterns = [
+      { base: '⬆️', odd: '⬇️' }, // Up vs Down arrow
+      { base: '◢', odd: '◣' }, // Triangle pointing different direction
+      { base: '▶️', odd: '◀️' }, // Right vs Left
+      { base: '╱', odd: '╲' }, // Diagonal lines
+    ];
+    theme = randomChoice(patterns);
+    renderType = 'symbol';
+    
+  } else if (difficulty <= 12) {
+    // VERY HARD: Minimal visual difference
+    const hardThemes = [
+      { base: '●', odd: '⬤' }, // Slightly different circle glyphs
+      { base: '■', odd: '▪' }, // Different sized squares
+      { base: '—', odd: '–' }, // Em dash vs En dash
+      { base: '○', odd: '◯' }, // Different circle outlines
+    ];
+    theme = randomChoice(hardThemes);
+    renderType = 'symbol';
+    
+  } else {
+    // INSANE: Number patterns or rotation
+    const insaneThemes = [
+      { base: '8', odd: '∞' }, // 8 vs infinity
+      { base: 'l', odd: 'I' }, // lowercase L vs uppercase i
+      { base: 'O', odd: '0' }, // Letter O vs Zero
+      { base: '6', odd: '9' }, // Could be rotated
+      { base: '∙', odd: '·' }, // Different dot sizes
+    ];
+    theme = randomChoice(insaneThemes);
+    renderType = 'symbol';
+  }
   
   return {
     id: 'odd-one-out',
     category: 'logic',
     difficulty: difficulty,
-    title: 'Find the Imposter',
+    title: 'Find the Different One',
     correctAnswer: oddIndex,
     
     render(contentContainer, answerContainer) {
-      // Calculate grid columns based on count
       const cols = itemCount === 9 ? 3 : 4;
+      
+      let itemsHTML;
+      
+      if (renderType === 'circle-size') {
+        // Render CSS circles with size difference
+        itemsHTML = Array.from({length: itemCount}).map((_, i) => {
+          const size = i === oddIndex ? theme.odd.size : theme.base.size;
+          const color = i === oddIndex ? theme.odd.color : theme.base.color;
+          return `
+            <div class="visual-item" data-index="${i}">
+              <div class="circle-shape" style="
+                width: ${size}px; 
+                height: ${size}px; 
+                background: ${color};
+                border-radius: 50%;
+              "></div>
+            </div>
+          `;
+        }).join('');
+        
+      } else if (renderType === 'circle-color') {
+        // Render CSS circles with color difference
+        itemsHTML = Array.from({length: itemCount}).map((_, i) => {
+          const color = i === oddIndex ? theme.odd : theme.base;
+          return `
+            <div class="visual-item" data-index="${i}">
+              <div class="circle-shape" style="
+                width: 50px; 
+                height: 50px; 
+                background: ${color};
+                border-radius: 50%;
+              "></div>
+            </div>
+          `;
+        }).join('');
+        
+      } else {
+        // Render symbols/text
+        itemsHTML = Array.from({length: itemCount}).map((_, i) => `
+          <div class="visual-item" data-index="${i}">
+            <div class="symbol-shape">${i === oddIndex ? theme.odd : theme.base}</div>
+          </div>
+        `).join('');
+      }
       
       contentContainer.innerHTML = `
         <style>
@@ -210,33 +342,52 @@ export function createOddOneOutChallenge(difficulty) {
             max-width: 350px;
             margin: 0 auto;
           }
-          .emoji-item {
+          .visual-item {
             aspect-ratio: 1;
             background: white;
             border-radius: 12px;
-            font-size: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 0 #eee;
-            border: 1px solid #ddd;
-            transition: transform 0.1s;
+            border: 2px solid #ddd;
+            transition: all 0.15s;
+            touch-action: manipulation;
           }
-          .emoji-item:active { transform: translateY(4px); box-shadow: none; }
+          .visual-item:active { 
+            transform: translateY(4px); 
+            box-shadow: none; 
+            border-color: #4dabf7;
+          }
+          .symbol-shape {
+            font-size: ${difficulty > 12 ? '2.8rem' : '2.2rem'};
+            font-weight: bold;
+            line-height: 1;
+          }
+          .difficulty-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
         </style>
+        <div class="difficulty-hint">
+          ${difficulty <= 2 ? '👀 Look for size difference' : 
+            difficulty <= 5 ? '🎨 Spot the shade' : 
+            difficulty <= 8 ? '🔄 Find the rotation' : 
+            difficulty <= 12 ? '⚠️ EXTREMELY SUBTLE' : 
+            '💀 GOOD LUCK 💀'}
+        </div>
         <div class="imposter-grid">
-          ${Array.from({length: itemCount}).map((_, i) => `
-            <div class="emoji-item" data-index="${i}">
-              ${i === oddIndex ? theme.odd : theme.base}
-            </div>
-          `).join('')}
+          ${itemsHTML}
         </div>
       `;
       
-      answerContainer.innerHTML = '<p style="text-align:center; color:#888;">Tap the different item</p>';
+      answerContainer.innerHTML = '<p style="text-align:center; color:#888; font-size:0.9rem;">Tap the different one</p>';
       
-      const items = contentContainer.querySelectorAll('.emoji-item');
+      const items = contentContainer.querySelectorAll('.visual-item');
       items.forEach(item => {
         item.addEventListener('click', () => {
           window.dispatchEvent(new CustomEvent('challengeAnswer', { 
@@ -245,7 +396,8 @@ export function createOddOneOutChallenge(difficulty) {
         });
       });
     },
-    check(a) { return a === this.correctAnswer; }, cleanup() {}
+    check(a) { return a === this.correctAnswer; }, 
+    cleanup() {}
   };
 }
 
