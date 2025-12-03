@@ -347,6 +347,6 @@ export function createWordProblemChallenge(difficulty) {
 }
 
 registerChallenge('arithmetic', 'math', createArithmeticChallenge, { name: 'Arithmetic', description: 'Solve', minDifficulty: 1, baseTime: 30 });
-registerChallenge('division', 'math', createDivisionChallenge, { name: 'Division', description: 'Divide', minDifficulty: 3, baseTime: 40 });
+// registerChallenge('division', 'math', createDivisionChallenge, { name: 'Division', description: 'Divide', minDifficulty: 3, baseTime: 40 });
 registerChallenge('fraction-comparison', 'math', createFractionComparisonChallenge, { name: 'Fractions', description: 'Compare', minDifficulty: 1, baseTime: 35 });
 registerChallenge('word-problem', 'math', createWordProblemChallenge, { name: 'Word Problems', description: 'Solve', minDifficulty: 1, baseTime: 45 });
